@@ -1,99 +1,205 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <title>Hoho3d - Buscador de Filamentos</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 30px; background: #f5f5f5; }
-    h1 { color: #333; }
-    .color-picker {
-      display: flex; flex-wrap: wrap; gap: 15px; margin-top: 20px;
-    }
-    .color-item {
-      cursor: pointer;
-      border: 2px solid transparent;
-      padding: 10px;
-      width: 120px;
-      background: white;
-      box-shadow: 0 0 5px #ccc;
-      text-align: center;
-      border-radius: 8px;
-      transition: border-color 0.3s;
-    }
-    .color-item:hover, .color-item.selected {
-      border-color: #007bff;
-    }
-    .color-swatch {
-      width: 50px; height: 50px; margin: 0 auto 10px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-    }
-    .product-link {
-      color: #007bff;
-      text-decoration: none;
-      font-weight: bold;
-      font-size: 14px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Buscador de Filamentos Hoho3d</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f0f0f0;
+    margin: 0; padding: 20px;
+  }
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  #searchPanel {
+    max-width: 400px;
+    margin: 20px auto;
+    text-align: center;
+  }
+  input[type="text"] {
+    padding: 10px;
+    font-size: 1.1em;
+    width: 70%;
+    border: 2px solid #ccc;
+    border-radius: 4px 0 0 4px;
+    outline: none;
+  }
+  input[type="text"]:focus {
+    border-color: #555;
+  }
+  button {
+    padding: 10px 15px;
+    font-size: 1.1em;
+    border: 2px solid #555;
+    background: #555;
+    color: white;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #333;
+    border-color: #333;
+  }
+  #results {
+    max-width: 600px;
+    margin: 30px auto;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+  }
+  .product {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+  }
+  .color-box {
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    margin-right: 20px;
+    border: 1px solid #999;
+  }
+  .product-info {
+    flex-grow: 1;
+  }
+  .product-info a {
+    text-decoration: none;
+    color: #0073e6;
+    font-weight: bold;
+  }
+  .product-info a:hover {
+    text-decoration: underline;
+  }
+  .hex-code {
+    font-family: monospace;
+    color: #666;
+  }
+  #noResults {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+  }
+</style>
 </head>
 <body>
-  <h1>Hoho3d - Buscador de Filamentos</h1>
-  <p>Elegí un color para ver los filamentos disponibles:</p>
-  <div class="color-picker" id="colorPicker"></div>
 
-  <script>
-    const products = [
-      {
-        name: "Grilon 3 PLA SILK Platino 1.75mm x 1kg",
-        colorHex: "#5b6770",
-        link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/silk/grilon-3-pla-silk-platino-175mm-x-1kg-5b6770"
-      },
-      {
-        name: "Grilon 3 PLA Piel 720 1.75mm x 1KG",
-        colorHex: "#e7b78a",
-        link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/basicos/grilon-3-pla-piel-720-175mm-x-1kg-e7b78a"
-      },
-      {
-        name: "Grilon 3 PLA Gris Plata 1.75mm x 1kg",
-        colorHex: "#75787b",
-        link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/basicos/grilon-3-pla-gris-plata-175mm-x-1kg-75787b"
-      }
-    ];
+<h1>Buscador de Filamentos Hoho3d</h1>
+<p style="text-align:center; font-style: italic; color:#555;">Tu elección precisa para impresión 3D</p>
 
-    const picker = document.getElementById("colorPicker");
+<div id="searchPanel">
+  <input type="text" id="colorInput" placeholder="#5b6770" maxlength="7" />
+  <button onclick="buscarColor()">Buscar</button>
+</div>
 
-    products.forEach((prod, idx) => {
-      const div = document.createElement("div");
-      div.className = "color-item";
-      div.title = prod.name;
-      div.style.borderColor = "transparent";
+<div id="results"></div>
 
-      const swatch = document.createElement("div");
-      swatch.className = "color-swatch";
-      swatch.style.backgroundColor = prod.colorHex;
+<script>
+  // Lista de filamentos con nombre, hex y link
+  const filamentos = [
+    {
+      nombre: "Grilon 3 PLA SILK Platino 1.75mm x 1kg",
+      hex: "#5b6770",
+      link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/silk/grilon-3-pla-silk-platino-175mm-x-1kg-5b6770"
+    },
+    {
+      nombre: "Grilon 3 PLA Piel 720 1.75mm x 1KG",
+      hex: "#e7b78a",
+      link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/basicos/grilon-3-pla-piel-720-175mm-x-1kg-e7b78a"
+    },
+    {
+      nombre: "Grilon 3 PLA Gris Plata 1.75mm x 1kg",
+      hex: "#75787b",
+      link: "https://www.hoho3d.com.ar/impresion-3d/filamentos/grilon-3/basicos/grilon-3-pla-gris-plata-175mm-x-1kg-75787b"
+    }
+  ];
 
-      const label = document.createElement("div");
-      label.textContent = prod.name;
+  // Convierte un HEX a objeto RGB
+  function hexToRgb(hex) {
+    if(!hex || hex[0] !== '#' || hex.length !== 7) return null;
+    return {
+      r: parseInt(hex.substr(1,2),16),
+      g: parseInt(hex.substr(3,2),16),
+      b: parseInt(hex.substr(5,2),16)
+    };
+  }
 
-      const link = document.createElement("a");
-      link.href = prod.link;
-      link.target = "_blank";
-      link.rel = "noopener noreferrer";
-      link.className = "product-link";
-      link.textContent = "Ver producto";
+  // Calcula distancia euclidiana entre dos colores RGB
+  function colorDistance(c1, c2) {
+    return Math.sqrt(
+      Math.pow(c1.r - c2.r, 2) +
+      Math.pow(c1.g - c2.g, 2) +
+      Math.pow(c1.b - c2.b, 2)
+    );
+  }
 
-      div.appendChild(swatch);
-      div.appendChild(label);
-      div.appendChild(link);
+  // Función que busca los colores más cercanos y muestra resultados
+  function buscarColor() {
+    const inputHex = document.getElementById('colorInput').value.trim().toLowerCase();
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = ''; // limpiar
 
-      div.addEventListener("click", () => {
-        document.querySelectorAll(".color-item").forEach(el => el.classList.remove("selected"));
-        div.classList.add("selected");
-      });
+    // Validar formato HEX
+    const validHex = /^#([0-9a-f]{6})$/i;
+    if (!validHex.test(inputHex)) {
+      resultsDiv.innerHTML = '<p id="noResults">Por favor, ingresa un código HEX válido, por ejemplo: #5b6770</p>';
+      return;
+    }
 
-      picker.appendChild(div);
+    const inputRgb = hexToRgb(inputHex);
+
+    // Calcular distancia y ordenar filamentos
+    const filamentosConDistancia = filamentos.map(f => {
+      return {
+        ...f,
+        rgb: hexToRgb(f.hex),
+        distancia: colorDistance(inputRgb, hexToRgb(f.hex))
+      };
     });
-  </script>
+
+    filamentosConDistancia.sort((a,b) => a.distancia - b.distancia);
+
+    // Mostrar los 3 más cercanos (o menos si hay menos)
+    const topFilamentos = filamentosConDistancia.slice(0,3);
+
+    if(topFilamentos.length === 0) {
+      resultsDiv.innerHTML = '<p id="noResults">No se encontraron filamentos.</p>';
+      return;
+    }
+
+    topFilamentos.forEach(f => {
+      const productDiv = document.createElement('div');
+      productDiv.className = 'product';
+
+      const colorBox = document.createElement('div');
+      colorBox.className = 'color-box';
+      colorBox.style.backgroundColor = f.hex;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'product-info';
+
+      const link = document.createElement('a');
+      link.href = f.link;
+      link.target = "_blank";
+      link.textContent = f.nombre;
+
+      const hexSpan = document.createElement('div');
+      hexSpan.className = 'hex-code';
+      hexSpan.textContent = f.hex;
+
+      infoDiv.appendChild(link);
+      infoDiv.appendChild(hexSpan);
+
+      productDiv.appendChild(colorBox);
+      productDiv.appendChild(infoDiv);
+
+      resultsDiv.appendChild(productDiv);
+    });
+  }
+</script>
+
 </body>
 </html>
