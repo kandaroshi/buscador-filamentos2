@@ -7,69 +7,64 @@
 <style>
   body {
     font-family: Arial, sans-serif;
-    background: #f0f0f0;
     margin: 0; padding: 20px;
+    background: #f0f0f0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   h1 {
+    width: 100%;
     text-align: center;
     color: #333;
   }
-  #searchPanel {
-    max-width: 400px;
-    margin: 20px auto;
-    text-align: center;
-  }
-  input[type="text"] {
-    padding: 10px;
-    font-size: 1.1em;
-    width: 70%;
-    border: 2px solid #ccc;
-    border-radius: 4px 0 0 4px;
-    outline: none;
-  }
-  input[type="text"]:focus {
-    border-color: #555;
-  }
-  button {
-    padding: 10px 15px;
-    font-size: 1.1em;
-    border: 2px solid #555;
-    background: #555;
-    color: white;
-    border-radius: 0 4px 4px 0;
-    cursor: pointer;
-  }
-  button:hover {
-    background: #333;
-    border-color: #333;
-  }
-  #results {
-    max-width: 600px;
-    margin: 30px auto;
+  .container {
+    display: flex;
+    max-width: 900px;
+    width: 100%;
     background: white;
-    padding: 20px;
     border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    overflow: hidden;
   }
+  .left-panel, .right-panel {
+    padding: 20px;
+    box-sizing: border-box;
+  }
+  .left-panel {
+    flex: 1 1 50%;
+    border-right: 1px solid #ddd;
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  .right-panel {
+    flex: 1 1 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
   .product {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid #ddd;
-    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    padding: 8px 0;
   }
   .color-box {
     width: 40px;
     height: 40px;
     border-radius: 5px;
-    margin-right: 20px;
-    border: 1px solid #999;
+    margin-right: 15px;
+    border: 1px solid #aaa;
   }
   .product-info {
     flex-grow: 1;
   }
   .product-info a {
-    text-decoration: none;
     color: #0073e6;
-    font-weight: bold;
+    text-decoration: none;
+    font-weight: 600;
   }
   .product-info a:hover {
     text-decoration: underline;
@@ -78,27 +73,83 @@
     font-family: monospace;
     color: #666;
   }
+  /* Estilos rueda de color */
+  #colorPicker {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid #333;
+    margin-bottom: 15px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: none;
+  }
+  #colorPicker::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  #colorPicker::-webkit-color-swatch {
+    border-radius: 50%;
+  }
+  #selectedColor {
+    width: 120px;
+    height: 120px;
+    border-radius: 8px;
+    border: 3px solid #333;
+    margin-bottom: 20px;
+  }
+  #results {
+    width: 100%;
+  }
+  #results .product {
+    border-bottom: 1px solid #ddd;
+  }
   #noResults {
     text-align: center;
     color: #666;
     font-style: italic;
+    padding: 10px;
+  }
+  /* Responsive */
+  @media (max-width: 700px) {
+    .container {
+      flex-direction: column;
+    }
+    .left-panel, .right-panel {
+      max-height: none;
+      border-right: none;
+      border-bottom: 1px solid #ddd;
+    }
+    .right-panel {
+      align-items: center;
+      padding-top: 10px;
+    }
   }
 </style>
 </head>
 <body>
 
 <h1>Buscador de Filamentos Hoho3d</h1>
-<p style="text-align:center; font-style: italic; color:#555;">Tu elección precisa para impresión 3D</p>
+<p style="width:100%; text-align:center; font-style: italic; color:#555; margin-bottom: 25px;">
+  Tu elección precisa para impresión 3D
+</p>
 
-<div id="searchPanel">
-  <input type="text" id="colorInput" placeholder="#5b6770" maxlength="7" />
-  <button onclick="buscarColor()">Buscar</button>
+<div class="container">
+  <div class="left-panel">
+    <h2>Filamentos disponibles</h2>
+    <div id="productList"></div>
+  </div>
+
+  <div class="right-panel">
+    <h2>Selecciona un color</h2>
+    <input type="color" id="colorPicker" value="#5b6770" />
+    <div id="selectedColor"></div>
+    <h3>Filamentos cercanos</h3>
+    <div id="results"></div>
+  </div>
 </div>
 
-<div id="results"></div>
-
 <script>
-  // Lista de filamentos con nombre, hex y link
   const filamentos = [
     {
       nombre: "Grilon 3 PLA SILK Platino 1.75mm x 1kg",
@@ -117,62 +168,13 @@
     }
   ];
 
-  // Convierte un HEX a objeto RGB
-  function hexToRgb(hex) {
-    if(!hex || hex[0] !== '#' || hex.length !== 7) return null;
-    return {
-      r: parseInt(hex.substr(1,2),16),
-      g: parseInt(hex.substr(3,2),16),
-      b: parseInt(hex.substr(5,2),16)
-    };
-  }
-
-  // Calcula distancia euclidiana entre dos colores RGB
-  function colorDistance(c1, c2) {
-    return Math.sqrt(
-      Math.pow(c1.r - c2.r, 2) +
-      Math.pow(c1.g - c2.g, 2) +
-      Math.pow(c1.b - c2.b, 2)
-    );
-  }
-
-  // Función que busca los colores más cercanos y muestra resultados
-  function buscarColor() {
-    const inputHex = document.getElementById('colorInput').value.trim().toLowerCase();
-    const resultsDiv = document.getElementById('results');
-    resultsDiv.innerHTML = ''; // limpiar
-
-    // Validar formato HEX
-    const validHex = /^#([0-9a-f]{6})$/i;
-    if (!validHex.test(inputHex)) {
-      resultsDiv.innerHTML = '<p id="noResults">Por favor, ingresa un código HEX válido, por ejemplo: #5b6770</p>';
-      return;
-    }
-
-    const inputRgb = hexToRgb(inputHex);
-
-    // Calcular distancia y ordenar filamentos
-    const filamentosConDistancia = filamentos.map(f => {
-      return {
-        ...f,
-        rgb: hexToRgb(f.hex),
-        distancia: colorDistance(inputRgb, hexToRgb(f.hex))
-      };
-    });
-
-    filamentosConDistancia.sort((a,b) => a.distancia - b.distancia);
-
-    // Mostrar los 3 más cercanos (o menos si hay menos)
-    const topFilamentos = filamentosConDistancia.slice(0,3);
-
-    if(topFilamentos.length === 0) {
-      resultsDiv.innerHTML = '<p id="noResults">No se encontraron filamentos.</p>';
-      return;
-    }
-
-    topFilamentos.forEach(f => {
-      const productDiv = document.createElement('div');
-      productDiv.className = 'product';
+  // Mostrar filamentos fijos a la izquierda
+  function mostrarFilamentos() {
+    const productList = document.getElementById('productList');
+    productList.innerHTML = '';
+    filamentos.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'product';
 
       const colorBox = document.createElement('div');
       colorBox.className = 'color-box';
@@ -193,13 +195,43 @@
       infoDiv.appendChild(link);
       infoDiv.appendChild(hexSpan);
 
-      productDiv.appendChild(colorBox);
-      productDiv.appendChild(infoDiv);
+      div.appendChild(colorBox);
+      div.appendChild(infoDiv);
 
-      resultsDiv.appendChild(productDiv);
+      productList.appendChild(div);
     });
   }
-</script>
 
-</body>
-</html>
+  // Convierte HEX a RGB
+  function hexToRgb(hex) {
+    if(!hex || hex[0] !== '#' || hex.length !== 7) return null;
+    return {
+      r: parseInt(hex.substr(1,2),16),
+      g: parseInt(hex.substr(3,2),16),
+      b: parseInt(hex.substr(5,2),16)
+    };
+  }
+
+  // Calcula distancia euclidiana en RGB
+  function colorDistance(c1, c2) {
+    return Math.sqrt(
+      Math.pow(c1.r - c2.r, 2) +
+      Math.pow(c1.g - c2.g, 2) +
+      Math.pow(c1.b - c2.b, 2)
+    );
+  }
+
+  // Buscar y mostrar filamentos cercanos
+  function buscarFilamentos(hex) {
+    const resultsDiv = document.getElementById('results');
+    resultsDiv.innerHTML = '';
+
+    const inputRgb = hexToRgb(hex);
+    if (!inputRgb) {
+      resultsDiv.innerHTML = '<p id="noResults">Color inválido.</p>';
+      return;
+    }
+
+    const conDistancia = filamentos.map(f => ({
+      ...f,
+      dist
