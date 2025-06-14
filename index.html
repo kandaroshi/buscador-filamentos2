@@ -97,6 +97,11 @@
     border-radius: 8px;
     border: 3px solid #333;
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2em;
   }
   #results {
     width: 100%;
@@ -168,7 +173,6 @@
     }
   ];
 
-  // Mostrar filamentos fijos a la izquierda
   function mostrarFilamentos() {
     const productList = document.getElementById('productList');
     productList.innerHTML = '';
@@ -202,7 +206,6 @@
     });
   }
 
-  // Convierte HEX a RGB
   function hexToRgb(hex) {
     if(!hex || hex[0] !== '#' || hex.length !== 7) return null;
     return {
@@ -212,7 +215,6 @@
     };
   }
 
-  // Calcula distancia euclidiana en RGB
   function colorDistance(c1, c2) {
     return Math.sqrt(
       Math.pow(c1.r - c2.r, 2) +
@@ -221,7 +223,6 @@
     );
   }
 
-  // Buscar y mostrar filamentos cercanos
   function buscarFilamentos(hex) {
     const resultsDiv = document.getElementById('results');
     resultsDiv.innerHTML = '';
@@ -234,4 +235,48 @@
 
     const conDistancia = filamentos.map(f => ({
       ...f,
-      dist
+      distancia: colorDistance(inputRgb, hexToRgb(f.hex))
+    }));
+
+    conDistancia.sort((a,b) => a.distancia - b.distancia);
+
+    const top3 = conDistancia.slice(0,3);
+
+    if(top3.length === 0){
+      resultsDiv.innerHTML = '<p id="noResults">No se encontraron filamentos cercanos.</p>';
+      return;
+    }
+
+    top3.forEach(f => {
+      const div = document.createElement('div');
+      div.className = 'product';
+
+      const colorBox = document.createElement('div');
+      colorBox.className = 'color-box';
+      colorBox.style.backgroundColor = f.hex;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'product-info';
+
+      const link = document.createElement('a');
+      link.href = f.link;
+      link.target = "_blank";
+      link.textContent = f.nombre;
+
+      const hexSpan = document.createElement('div');
+      hexSpan.className = 'hex-code';
+      hexSpan.textContent = f.hex;
+
+      infoDiv.appendChild(link);
+      infoDiv.appendChild(hexSpan);
+
+      div.appendChild(colorBox);
+      div.appendChild(infoDiv);
+
+      resultsDiv.appendChild(div);
+    });
+  }
+
+  function actualizarColorSeleccionado(hex) {
+    const selectedColorDiv = document.getElementById('selectedColor');
+    selectedColorDiv.style.backgroundColor = hex;
